@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscription Billing Exception Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#64748b;
+  --success:#16a34a;--warning:#d97706;--danger:#dc2626;--info:#0891b2;
+  --bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#94a3b8;
+  --radius:8px;--shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+  --shadow-md:0 4px 6px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.06);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+/* ---- LAYOUT ---- */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{font-weight:700;font-size:18px;letter-spacing:-.3px}
+.topbar-subtitle{font-size:12px;opacity:.75}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.notif-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;font-size:16px}
+.notif-badge{position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:4px 10px;border-radius:20px;font-size:13px;cursor:pointer}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:#fff;color:var(--primary);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
+.main-content{display:flex;flex:1;overflow:hidden}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--secondary);font-size:13px;font-weight:500;border-left:3px solid transparent;transition:.15s}
+.nav-item:hover{background:#f8fafc;color:var(--text)}
+.nav-item.active{color:var(--primary);border-left-color:var(--primary);background:#eff6ff}
+.nav-icon{width:18px;text-align:center}
+.page-area{flex:1;overflow-y:auto;padding:24px}
+/* ---- KPI CARDS ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border-top:3px solid transparent;position:relative;overflow:hidden}
+.kpi-card.danger{border-top-color:var(--danger)}
+.kpi-card.warning{border-top-color:var(--warning)}
+.kpi-card.success{border-top-color:var(--success)}
+.kpi-card.info{border-top-color:var(--info)}
+.kpi-card.primary{border-top-color:var(--primary)}
+.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;line-height:1}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.kpi-trend{position:absolute;top:18px;right:18px;font-size:20px;opacity:.15}
+/* ---- TOOLBAR ---- */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-box{flex:1;min-width:200px;max-width:360px;position:relative}
+.search-box input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;outline:none;background:var(--surface)}
+.search-box input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);border:none;font-size:13px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#f8fafc}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{background:#b45309}
+.btn-sm{padding:5px 10px;font-size:12px}
+.filter-select{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--surface);color:var(--text);cursor:pointer;outline:none}
+.filter-select:focus{border-color:var(--primary)}
+/* ---- TABLE ---- */
+.table-wrap{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.table-title{font-weight:600;font-size:14px}
+.table-count{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:#f8fafc;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{color:var(--text)}
+thead th .sort-icon{margin-left:4px;opacity:.4}
+thead th.sorted .sort-icon{opacity:1;color:var(--primary)}
+tbody tr{border-bottom:1px solid var(--border);transition:.1s}
+tbody tr:hover{background:#f8fafc;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+td{padding:11px 14px;font-size:13px;vertical-align:middle}
+.priority-badge,.status-badge,.type-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.priority-critical{background:#fef2f2;color:#dc2626}
+.priority-high{background:#fff7ed;color:#d97706}
+.priority-medium{background:#fefce8;color:#ca8a04}
+.priority-low{background:#f0fdf4;color:#16a34a}
+.status-open{background:#eff6ff;color:#2563eb}
+.status-pending{background:#fff7ed;color:#d97706}
+.status-resolved{background:#f0fdf4;color:#16a34a}
+.status-escalated{background:#fef2f2;color:#dc2626}
+.status-approved{background:#f0fdf4;color:#16a34a}
+.status-rejected{background:#fef2f2;color:#dc2626}
+.type-usage{background:#f0f9ff;color:#0369a1}
+.type-renewal{background:#fdf4ff;color:#9333ea}
+.type-billing{background:#fff7ed;color:#d97706}
+.owner-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px}
+.owner-avatar{width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.amount{font-family:'Courier New',monospace;font-weight:600}
+.amount.negative{color:var(--danger)}
+/* ---- PAGINATION ---- */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+.page-btns{display:flex;gap:4px}
+.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.page-btn:hover:not(.active){background:#f8fafc}
+/* ---- DETAIL PANEL ---- */
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;backdrop-filter:blur(2px)}
+.panel-overlay.open{display:block}
+.detail-panel{position:fixed;right:0;top:0;bottom:0;width:680px;background:var(--surface);box-shadow:-4px 0 24px rgba(0,0,0,.15);z-index:101;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease}
+.detail-panel.open{transform:translateX(0)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-head-left{display:flex;align-items:center;gap:10px}
+.panel-title{font-size:16px;font-weight:700}
+.panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px}
+.panel-close:hover{color:var(--text)}
+.panel-body{flex:1;overflow-y:auto;padding:20px}
+.panel-footer{border-top:1px solid var(--border);padding:14px 20px;display:flex;gap:10px;align-items:center;flex-shrink:0}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;gap:0}
+.panel-tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:.15s}
+.panel-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.panel-tab:hover:not(.active){color:var(--text)}
+/* ---- DETAIL SECTIONS ---- */
+.section{margin-bottom:20px}
+.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.field-value{font-size:13px;color:var(--text)}
+.field-value.highlight{font-weight:700;color:var(--danger)}
+.field-full{grid-column:1/-1}
+/* ---- PROGRESS BAR ---- */
+.progress-bar{background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;border-radius:4px;transition:.3s}
+.fill-success{background:var(--success)}
+.fill-warning{background:var(--warning)}
+.fill-danger{background:var(--danger)}
+/* ---- FORM ELEMENTS ---- */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--text)}
+.form-label .req{color:var(--danger);margin-left:2px}
+.form-input,.form-select,.form-textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;outline:none;background:var(--surface)}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.form-input.error,.form-select.error,.form-textarea.error{border-color:var(--danger)}
+.form-error{font-size:11px;color:var(--danger);margin-top:3px}
+.form-textarea{resize:vertical;min-height:80px}
+/* ---- COMMENTS ---- */
+.comment-list{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.comment{display:flex;gap:10px}
+.comment-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.comment-body{flex:1;background:#f8fafc;border-radius:var(--radius);padding:10px 12px;border:1px solid var(--border)}
+.comment-meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+.comment-text{font-size:13px}
+/* ---- AUDIT TIMELINE ---- */
+.timeline{display:flex;flex-direction:column;gap:0}
+.timeline-item{display:flex;gap:12px;padding-bottom:16px;position:relative}
+.timeline-item:not(:last-child)::before{content:'';position:absolute;left:14px;top:28px;bottom:0;width:2px;background:var(--border)}
+.timeline-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;z-index:1}
+.dot-create{background:#eff6ff;color:var(--primary)}
+.dot-update{background:#fff7ed;color:var(--warning)}
+.dot-approve{background:#f0fdf4;color:var(--success)}
+.dot-reject{background:#fef2f2;color:var(--danger)}
+.dot-comment{background:#fdf4ff;color:#9333ea}
+.dot-assign{background:#f0f9ff;color:var(--info)}
+.timeline-content{flex:1}
+.timeline-action{font-size:13px;font-weight:500}
+.timeline-meta{font-size:11px;color:var(--muted);margin-top:2px}
+/* ---- RECOMMENDED ACTIONS ---- */
+.action-cards{display:flex;flex-direction:column;gap:8px}
+.action-card{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;align-items:flex-start;gap:10px}
+.action-icon{font-size:20px;flex-shrink:0}
+.action-content{flex:1}
+.action-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.action-desc{font-size:12px;color:var(--muted)}
+.action-btn-group{display:flex;gap:6px;margin-top:8px}
+/* ---- APPROVAL WORKFLOW ---- */
+.workflow-steps{display:flex;align-items:center;gap:0;margin-bottom:16px}
+.workflow-step{display:flex;align-items:center;gap:6px;flex:1}
+.workflow-step:not(:last-child)::after{content:'';flex:1;height:2px;background:var(--border);margin:0 6px}
+.workflow-step.done::after{background:var(--success)}
+.step-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--surface);flex-shrink:0}
+.workflow-step.done .step-circle{background:var(--success);border-color:var(--success);color:#fff}
+.workflow-step.active .step-circle{background:var(--primary);border-color:var(--primary);color:#fff}
+.workflow-step.rejected .step-circle{background:var(--danger);border-color:var(--danger);color:#fff}
+.step-label{font-size:11px;font-weight:500;color:var(--muted)}
+/* ---- NOTIFICATIONS PANEL ---- */
+.notif-dropdown{position:fixed;top:56px;right:24px;width:340px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:200;border:1px solid var(--border);display:none}
+.notif-dropdown.open{display:block}
+.notif-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:14px}
+.notif-list{max-height:360px;overflow-y:auto}
+.notif-item{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s}
+.notif-item:hover{background:#f8fafc}
+.notif-item.unread{background:#eff6ff}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:4px}
+.notif-dot.read{background:var(--border)}
+.notif-text{font-size:13px}
+.notif-time{font-size:11px;color:var(--muted);margin-top:2px}
+.notif-footer{padding:10px 16px;text-align:center;font-size:12px;color:var(--primary);cursor:pointer;border-top:1px solid var(--border)}
+/* ---- TOAST ---- */
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:500}
+.toast{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-md);border-left:4px solid;font-size:13px;max-width:360px;animation:slideIn .3s ease}
+.toast.success{border-left-color:var(--success)}
+.toast.error{border-left-color:var(--danger)}
+.toast.warning{border-left-color:var(--warning)}
+.toast.info{border-left-color:var(--info)}
+.toast-icon{font-size:18px}
+.toast-msg{flex:1}
+.toast-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0;transform:translateX(20px)}}
+/* ---- MODAL ---- */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;backdrop-filter:blur(2px);align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:12px;width:460px;max-width:95vw;box-shadow:var(--shadow-md);max-height:90vh;overflow-y:auto}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+/* ---- USAGE CHARTS ---- */
+.usage-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.usage-card{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.usage-card-title{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.3px}
+.meter{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.meter-label{font-size:12px;min-width:90px}
+.meter-bar{flex:1;background:#e2e8f0;border-radius:4px;height:10px;overflow:hidden}
+.meter-fill{height:100%;border-radius:4px}
+.meter-val{font-size:11px;font-weight:600;min-width:40px;text-align:right}
+/* ---- MISC ---- */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;background:#f1f5f9;color:var(--secondary)}
+.chip-group{display:flex;flex-wrap:wrap;gap:4px}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-row-key{color:var(--muted);font-weight:500}
+.sla-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px}
+.sla-ok{background:#f0fdf4;color:var(--success)}
+.sla-warn{background:#fff7ed;color:var(--warning)}
+.sla-breach{background:#fef2f2;color:var(--danger)}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .detail-panel{width:100%}
+  .field-grid{grid-template-columns:1fr}
+  .usage-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-logo">⚡ BillingOps</div>
+        <div class="topbar-subtitle">Subscription Exception Management</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="notif-btn" onclick="toggleNotif()" id="notifBtn">🔔<span class="notif-badge" id="notifCount">5</span></button>
+      <div class="user-chip">
+        <div class="user-avatar">JD</div>
+        <span>John Doe</span>
+        <span>▾</span>
+      </div>
+    </div>
+  </div>
+  <!-- NOTIFICATIONS DROPDOWN -->
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">
+      Notifications
+      <button class="btn btn-sm btn-secondary" onclick="markAllRead()">Mark all read</button>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+    <div class="notif-footer" onclick="closeNotif()">View all notifications</div>
+  </div>
+  <!-- MAIN -->
+  <div class="main-content">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item" onclick="setPage('exceptions')" id="nav-exceptions"><span class="nav-icon">⚠️</span> Exceptions</div>
+      <div class="nav-item" onclick="setPage('usage')" id="nav-usage"><span class="nav-icon">📈</span> Usage</div>
+      <div class="nav-item" onclick="setPage('renewals')" id="nav-renewals"><span class="nav-icon">🔄</span> Renewals</div>
+      <div class="nav-item" onclick="setPage('reports')" id="nav-reports"><span class="nav-icon">📋</span> Reports</div>
+      <div style="margin-top:auto;padding:16px 20px;font-size:11px;color:var(--muted)">v2.4.1 · Sep 2026</div>
+    </div>
+    <!-- PAGE AREA -->
+    <div class="page-area" id="pageArea"></div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL OVERLAY -->
+<div class="panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="panel-head">
+    <div class="panel-head-left">
+      <button class="panel-close" onclick="closePanel()">✕</button>
+      <div>
+        <div class="panel-title" id="panelTitle">Exception Detail</div>
+        <div id="panelSubtitle" style="font-size:12px;color:var(--muted)"></div>
+      </div>
+    </div>
+    <div id="panelStatusBadge"></div>
+  </div>
+  <div class="panel-tabs">
+    <div class="panel-tab active" onclick="switchTab('details')" id="tab-details">Details</div>
+    <div class="panel-tab" onclick="switchTab('usage')" id="tab-usage">Usage & Renewal</div>
+    <div class="panel-tab" onclick="switchTab('actions')" id="tab-actions">Actions</div>
+    <div class="panel-tab" onclick="switchTab('comments')" id="tab-comments">Comments</div>
+    <div class="panel-tab" onclick="switchTab('history')" id="tab-history">History</div>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+  <div class="panel-footer" id="panelFooter"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Modal</div>
+      <button class="panel-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===================== MOCK DATA =====================
+const OWNERS = ['Alice Chen','Bob Martinez','Carol White','David Kim','Emma Brown','Frank Lee'];
+const OWNER_COLORS = ['#7c3aed','#0891b2','#d97706','#16a34a','#dc2626','#2563eb'];
+
+const EXCEPTIONS = [
+  {id:'EX-2001',type:'usage',subId:'SUB-10023',customer:'Acme Corporation',plan:'Enterprise Pro',amount:42500,priority:'critical',status:'open',owner:'Alice Chen',created:'2026-08-20',dueDate:'2026-09-03',aging:12,cycleTime:3,sla:'breach',description:'Usage overage detected: 145% of licensed API calls consumed in billing cycle. Auto-cap disabled.',tags:['billing','api','overage'],assignedGroup:'Billing Ops',escalated:true,approvalStep:1},
+  {id:'EX-2002',type:'renewal',subId:'SUB-10031',customer:'TechFlow Inc',plan:'Business Plus',amount:18750,priority:'high',status:'pending',owner:'Bob Martinez',created:'2026-08-22',dueDate:'2026-09-05',aging:10,cycleTime:5,sla:'warn',description:'Renewal contract pending signature. Customer has not responded to 3 follow-up emails.',tags:['renewal','contract'],assignedGroup:'Account Mgmt',escalated:false,approvalStep:2},
+  {id:'EX-2003',type:'billing',subId:'SUB-10042',customer:'GlobalRetail Ltd',plan:'Enterprise Plus',amount:67200,priority:'critical',status:'escalated',owner:'Carol White',created:'2026-08-18',dueDate:'2026-09-01',aging:14,cycleTime:7,sla:'breach',description:'Invoice disputed by customer finance team. Payment withheld pending credit note issuance.',tags:['dispute','invoice','credit'],assignedGroup:'Finance',escalated:true,approvalStep:3},
+  {id:'EX-2004',type:'usage',subId:'SUB-10055',customer:'StartupHub Co',plan:'Starter Growth',amount:3200,priority:'medium',status:'open',owner:'David Kim',created:'2026-08-25',dueDate:'2026-09-08',aging:7,cycleTime:2,sla:'ok',description:'Minor usage discrepancy in storage billing. Delta of $320 identified vs reported usage.',tags:['storage','discrepancy'],assignedGroup:'Billing Ops',escalated:false,approvalStep:1},
+  {id:'EX-2005',type:'renewal',subId:'SUB-10061',customer:'DataVault Systems',plan:'Enterprise Core',amount:29000,priority:'high',status:'pending',owner:'Emma Brown',created:'2026-08-21',dueDate:'2026-09-04',aging:11,cycleTime:4,sla:'warn',description:'Multi-year renewal negotiation stalled. Legal team reviewing updated SLA terms.',tags:['renewal','legal','SLA'],assignedGroup:'Sales',escalated:false,approvalStep:2},
+  {id:'EX-2006',type:'billing',subId:'SUB-10072',customer:'MedTech Partners',plan:'Healthcare Pro',amount:15600,priority:'low',status:'resolved',owner:'Frank Lee',created:'2026-08-15',dueDate:'2026-08-29',aging:17,cycleTime:6,sla:'ok',description:'Proration error on mid-cycle plan upgrade resolved. Credit of $1,560 issued.',tags:['proration','resolved'],assignedGroup:'Billing Ops',escalated:false,approvalStep:3},
+  {id:'EX-2007',type:'usage',subId:'SUB-10083',customer:'CloudNine Analytics',plan:'Analytics Suite',amount:8900,priority:'medium',status:'open',owner:'Alice Chen',created:'2026-08-24',dueDate:'2026-09-07',aging:8,cycleTime:3,sla:'ok',description:'Data export quota exceeded. 230GB used against 200GB monthly allocation.',tags:['quota','exports'],assignedGroup:'Billing Ops',escalated:false,approvalStep:1},
+  {id:'EX-2008',type:'renewal',subId:'SUB-10091',customer:'FinServ Group',plan:'Financial Pro',amount:54000,priority:'critical',status:'pending',owner:'Bob Martinez',created:'2026-08-19',dueDate:'2026-09-02',aging:13,cycleTime:8,sla:'breach',description:'Annual renewal at risk. Customer evaluating competitor. Requires executive sponsor engagement.',tags:['churn-risk','renewal','executive'],assignedGroup:'Account Mgmt',escalated:true,approvalStep:2},
+  {id:'EX-2009',type:'billing',subId:'SUB-10102',customer:'EduLearn Platform',plan:'Education Bundle',amount:4750,priority:'low',status:'open',owner:'Carol White',created:'2026-08-26',dueDate:'2026-09-09',aging:6,cycleTime:1,sla:'ok',description:'Tax exemption certificate expired. New certificate pending from customer.',tags:['tax','compliance'],assignedGroup:'Finance',escalated:false,approvalStep:1},
+  {id:'EX-2010',type:'usage',subId:'SUB-10113',customer:'RetailMax Corp',plan:'Commerce Pro',amount:22300,priority:'high',status:'escalated',owner:'David Kim',created:'2026-08-17',dueDate:'2026-08-31',aging:15,cycleTime:9,sla:'breach',description:'API rate limit breach causing service degradation. Customer requesting SLA credit of 20%.',tags:['SLA','credit','API'],assignedGroup:'Engineering',escalated:true,approvalStep:3},
+];
+
+const NOTIFICATIONS = [
+  {id:1,text:'EX-2003 escalated to Finance Director',time:'10 min ago',read:false,type:'critical'},
+  {id:2,text:'EX-2008 renewal deadline in 2 days',time:'1 hour ago',read:false,type:'warning'},
+  {id:3,text:'EX-2001 assigned to Alice Chen',time:'2 hours ago',read:false,type:'info'},
+  {id:4,text:'EX-2006 marked as resolved by Frank Lee',time:'3 hours ago',read:false,type:'success'},
+  {id:5,text:'New exception EX-2010 created',time:'4 hours ago',read:false,type:'info'},
+  {id:6,text:'EX-2005 comment added by Emma Brown',time:'6 hours ago',read:true,type:'info'},
+  {id:7,text:'Weekly billing report ready for download',time:'1 day ago',read:true,type:'info'},
+];
+
+const COMMENTS_MAP = {
+  'EX-2001':[
+    {author:'Alice Chen',color:'#7c3aed',time:'Aug 21, 2026 9:14 AM',text:'Investigated usage spike. Looks like customer ran a batch job that consumed 3x normal API calls. Contacting their tech team.'},
+    {author:'John Doe',color:'#2563eb',time:'Aug 22, 2026 2:30 PM',text:'Customer confirmed the batch job. They are requesting a one-time exception. Escalating for approval.'},
+    {author:'Alice Chen',color:'#7c3aed',time:'Aug 24, 2026 11:00 AM',text:'Exception approval form sent to customer. Awaiting signed acknowledgment.'},
+  ],
+  'EX-2003':[
+    {author:'Carol White',color:'#d97706',time:'Aug 19, 2026 10:00 AM',text:'Customer disputed invoice line item for professional services add-on. Claims it was not authorized.'},
+    {author:'Finance Team',color:'#16a34a',time:'Aug 20, 2026 4:00 PM',text:'Reviewing original SOW and order form. Need 2 business days to compile evidence.'},
+  ],
+  'EX-2008':[
+    {author:'Bob Martinez',color:'#0891b2',time:'Aug 20, 2026 8:00 AM',text:'Customer VP reached out directly about competitive offer from CompeteX. Pricing delta is $8K/year.'},
+    {author:'Sarah VP',color:'#dc2626',time:'Aug 21, 2026 3:00 PM',text:'Escalating to regional VP for executive engagement. Preparing counter-proposal with added value.'},
+  ],
+};
+
+const HISTORY_MAP = {
+  'EX-2001':[
+    {type:'create',icon:'🆕',cls:'dot-create',text:'Exception created by system automation',by:'System',time:'Aug 20, 2026 6:02 AM'},
+    {type:'assign',icon:'👤',cls:'dot-assign',text:'Assigned to Alice Chen (Billing Ops)',by:'John Doe',time:'Aug 20, 2026 9:00 AM'},
+    {type:'update',icon:'✏️',cls:'dot-update',text:'Priority escalated from High to Critical',by:'Alice Chen',time:'Aug 21, 2026 9:15 AM'},
+    {type:'comment',icon:'💬',cls:'dot-comment',text:'Comment added',by:'Alice Chen',time:'Aug 21, 2026 9:14 AM'},
+    {type:'update',icon:'✏️',cls:'dot-update',text:'Status changed to Open → Pending Approval',by:'John Doe',time:'Aug 22, 2026 2:31 PM'},
+  ],
+  'EX-2003':[
+    {type:'create',icon:'🆕',cls:'dot-create',text:'Exception created by billing system',by:'System',time:'Aug 18, 2026 5:00 AM'},
+    {type:'assign',icon:'👤',cls:'dot-assign',text:'Assigned to Carol White (Finance)',by:'John Doe',time:'Aug 18, 2026 9:30 AM'},
+    {type:'update',icon:'✏️',cls:'dot-update',text:'Escalated to Finance Director',by:'Carol White',time:'Aug 19, 2026 3:00 PM'},
+    {type:'approve',icon:'✅',cls:'dot-approve',text:'Step 1 approved by Team Lead',by:'Sarah M.',time:'Aug 20, 2026 11:00 AM'},
+    {type:'reject',icon:'❌',cls:'dot-reject',text:'Awaiting Finance Director approval - SLA breached',by:'System',time:'Aug 22, 2026 8:00 AM'},
+  ],
+};
+
+// ===================== STATE =====================
+let currentPage = 'dashboard';
+let currentException = null;
+let currentTab = 'details';
+let exceptionData = [...EXCEPTIONS];
+let sortCol = 'aging';
+let sortDir = 'desc';
+let filterStatus = '';
+let filterPriority = '';
+let filterType = '';
+let searchQuery = '';
+let currentPage_table = 1;
+const PAGE_SIZE = 6;
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  renderNotifList();
+  setPage('dashboard');
+});
+
+// ===================== NAVIGATION =====================
+function setPage(p){
+  currentPage = p;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-' + p);
+  if(nav) nav.classList.add('active');
+  const area = document.getElementById('pageArea');
+  if(p === 'dashboard') area.innerHTML = renderDashboard();
+  else if(p === 'exceptions') area.innerHTML = renderExceptionsPage();
+  else if(p === 'usage') area.innerHTML = renderUsagePage();
+  else if(p === 'renewals') area.innerHTML = renderRenewalsPage();
+  else if(p === 'reports') area.innerHTML = renderReportsPage();
+  attachTableEvents();
+}
+
+// ===================== DASHBOARD =====================
+function renderDashboard(){
+  const open = exceptionData.filter(e => e.status !== 'resolved').length;
+  const critical = exceptionData.filter(e => e.priority === 'critical').length;
+  const exposure = exceptionData.reduce((s,e) => s + e.amount, 0);
+  const avgAging = Math.round(exceptionData.reduce((s,e) => s + e.aging, 0) / exceptionData.length);
+  const avgCycle = Math.round(exceptionData.reduce((s,e) => s + e.cycleTime, 0) / exceptionData.length);
+  const slaBreach = exceptionData.filter(e => e.sla === 'breach').length;
+
+  return `
+  <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Exception Dashboard</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card danger">
+      <div class="kpi-label">Open Exceptions</div>
+      <div class="kpi-value">${open}</div>
+      <div class="kpi-sub">${critical} Critical · ${exceptionData.filter(e=>e.priority==='high'&&e.status!=='resolved').length} High</div>
+      <div class="kpi-trend">⚠️</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="kpi-label">Financial Exposure</div>
+      <div class="kpi-value">$${(exposure/1000).toFixed(0)}K</div>
+      <div class="kpi-sub">${exceptionData.filter(e=>e.status!=='resolved').length} active exceptions</div>
+      <div class="kpi-trend">💰</div>
+    </div>
+    <div class="kpi-card info">
+      <div class="kpi-label">Avg. Aging (Days)</div>
+      <div class="kpi-value">${avgAging}</div>
+      <div class="kpi-sub">Target: &lt;10 days</div>
+      <div class="kpi-trend">📅</div>
+    </div>
+    <div class="kpi-card primary">
+      <div class="kpi-label">Avg. Cycle Time</div>
+      <div class="kpi-value">${avgCycle}d</div>
+      <div class="kpi-sub">Target: &lt;5 days</div>
+      <div class="kpi-trend">⏱️</div>
+    </div>
+    <div class="kpi-card ${slaBreach > 2 ? 'danger' : 'success'}">
+      <div class="kpi-label">SLA Breaches</div>
+      <div class="kpi-value">${slaBreach}</div>
+      <div class="kpi-sub">${exceptionData.filter(e=>e.sla==='warn').length} at risk</div>
+      <div class="kpi-trend">🚦</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="table-wrap">
+      <div class="table-header"><span class="table-title">By Priority</span></div>
+      <div style="padding:14px">
+        ${['critical','high','medium','low'].map(p => {
+          const count = exceptionData.filter(e=>e.priority===p).length;
+          const pct = Math.round(count/exceptionData.length*100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span class="priority-badge priority-${p}">${p}</span>
+              <span>${count} (${pct}%)</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill ${p==='critical'?'fill-danger':p==='high'?'fill-warning':p==='medium'?'fill-warning':'fill-success'}" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><span class="table-title">By Type</span></div>
+      <div style="padding:14px">
+        ${['usage','renewal','billing'].map(t => {
+          const count = exceptionData.filter(e=>e.type===t).length;
+          const pct = Math.round(count/exceptionData.length*100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span class="type-badge type-${t}">${t}</span>
+              <span>${count} (${pct}%)</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill fill-success" style="width:${pct}%;background:${t==='usage'?'#0891b2':t==='renewal'?'#9333ea':'#d97706'}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+  ${renderExceptionTable(true)}`;
+}
+
+// ===================== EXCEPTIONS PAGE =====================
+function renderExceptionsPage(){
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <h2 style="font-size:18px;font-weight:700">Exception Queue</h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-secondary" onclick="exportExcel()">⬇ Export Excel</button>
+      <button class="btn btn-primary" onclick="openNewExceptionModal()">+ New Exception</button>
+    </div>
+  </div>
+  ${renderExceptionTable(false)}`;
+}
+
+function renderExceptionTable(compact){
+  let data = [...exceptionData];
+  if(searchQuery) data = data.filter(e =>
+    e.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.subId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  if(filterStatus) data = data.filter(e => e.status === filterStatus);
+  if(filterPriority) data = data.filter(e => e.priority === filterPriority);
+  if(filterType) data = data.filter(e => e.type === filterType);
+  data.sort((a,b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if(typeof va === 'string') va = va.toLowerCase(), vb = vb.toLowerCase();
+    if(sortDir === 'asc') return va > vb ? 1 : -1;
+    return va < vb ? 1 : -1;
+  });
+  const total = data.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const paged = data.slice((currentPage_table-1)*PAGE_SIZE, currentPage_table*PAGE_SIZE);
+
+  const sortIcon = (col) => `<span class="sort-icon">${sortCol===col?(sortDir==='asc'?'↑':'↓'):'↕'}</span>`;
+
+  return `
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search by ID, customer, subscription..." value="${searchQuery}" oninput="onSearch(this.value)" id="searchInput">
+    </div>
+    <select class="filter-select" onchange="onFilterStatus(this.value)">
+      <option value="">All Statuses</option>
+      <option value="open" ${filterStatus==='open'?'selected':''}>Open</option>
+      <option value="pending" ${filterStatus==='pending'?'selected':''}>Pending</option>
+      <option value="escalated" ${filterStatus==='escalated'?'selected':''}>Escalated</option>
+      <option value="resolved" ${filterStatus==='resolved'?'selected':''}>Resolved</option>
+    </select>
+    <select class="filter-select" onchange="onFilterPriority(this.value)">
+      <option value="">All Priorities</option>
+      <option value="critical" ${filterPriority==='critical'?'selected':''}>Critical</option>
+      <option value="high" ${filterPriority==='high'?'selected':''}>High</option>
+      <option value="medium" ${filterPriority==='medium'?'selected':''}>Medium</option>
+      <option value="low" ${filterPriority==='low'?'selected':''}>Low</option>
+    </select>
+    <select class="filter-select" onchange="onFilterType(this.value)">
+      <option value="">All Types</option>
+      <option value="usage" ${filterType==='usage'?'selected':''}>Usage</option>
+      <option value="renewal" ${filterType==='renewal'?'selected':''}>Renewal</option>
+      <option value="billing" ${filterType==='billing'?'selected':''}>Billing</option>
+    </select>
+    ${!compact?`<button class="btn btn-secondary" onclick="clearFilters()">✕ Clear</button>`:''}
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">Exceptions <span class="table-count">(${total} total)</span></span>
+      ${compact?`<button class="btn btn-sm btn-secondary" onclick="setPage('exceptions')">View All</button>`:''}
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th onclick="onSort('id')" class="${sortCol==='id'?'sorted':''}">ID ${sortIcon('id')}</th>
+          <th onclick="onSort('priority')" class="${sortCol==='priority'?'sorted':''}">Priority ${sortIcon('priority')}</th>
+          <th onclick="onSort('type')" class="${sortCol==='type'?'sorted':''}">Type ${sortIcon('type')}</th>
+          <th onclick="onSort('customer')" class="${sortCol==='customer'?'sorted':''}">Customer ${sortIcon('customer')}</th>
+          <th onclick="onSort('amount')" class="${sortCol==='amount'?'sorted':''}">Exposure ${sortIcon('amount')}</th>
+          <th onclick="onSort('status')" class="${sortCol==='status'?'sorted':''}">Status ${sortIcon('status')}</th>
+          <th onclick="onSort('aging')" class="${sortCol==='aging'?'sorted':''}">Aging ${sortIcon('aging')}</th>
+          <th onclick="onSort('sla')" class="${sortCol==='sla'?'sorted':''}">SLA ${sortIcon('sla')}</th>
+          <th>Owner</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${paged.length === 0 ? `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><div>No exceptions match your filters</div></div></td></tr>` : ''}
+        ${paged.map(e => `
+        <tr onclick="openDetail('${e.id}')" data-id="${e.id}">
+          <td><b>${e.id}</b><br><span style="font-size:11px;color:var(--muted)">${e.subId}</span></td>
+          <td><span class="priority-badge priority-${e.priority}">${e.priority}</span></td>
+          <td><span class="type-badge type-${e.type}">${e.type}</span></td>
+          <td><div style="font-weight:500">${e.customer}</div><div style="font-size:11px;color:var(--muted)">${e.plan}</div></td>
+          <td><span class="amount negative">$${e.amount.toLocaleString()}</span></td>
+          <td><span class="status-badge status-${e.status}">${e.status}</span>${e.escalated?'<span title="Escalated" style="margin-left:4px">🚨</span>':''}</td>
+          <td><span style="font-weight:600;color:${e.aging>10?'var(--danger)':e.aging>7?'var(--warning)':'var(--success)'}">${e.aging}d</span></td>
+          <td><span class="sla-badge sla-${e.sla}">${e.sla==='breach'?'⛔ Breach':e.sla==='warn'?'⚠️ At Risk':'✅ OK'}</span></td>
+          <td><div class="owner-chip"><div class="owner-avatar" style="background:${OWNER_COLORS[OWNERS.indexOf(e.owner)]||'var(--primary)'}">${e.owner.split(' ').map(x=>x[0]).join('')}</div>${e.owner.split(' ')[0]}</div></td>
+          <td onclick="event.stopPropagation()">
+            <button class="btn btn-sm btn-primary" onclick="openDetail('${e.id}')">View</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pagination">
+      <span>Showing ${Math.min((currentPage_table-1)*PAGE_SIZE+1, total)}–${Math.min(currentPage_table*PAGE_SIZE, total)} of ${total}</span>
+      <div class="page-btns">
+        <button class="page-btn" onclick="gotoPage(${currentPage_table-1})" ${currentPage_table===1?'disabled':''}>‹</button>
+        ${Array.from({length:pages},(_,i)=>`<button class="page-btn ${currentPage_table===i+1?'active':''}" onclick="gotoPage(${i+1})">${i+1}</button>`).join('')}
+        <button class="page-btn" onclick="gotoPage(${currentPage_table+1})" ${currentPage_table===pages?'disabled':''}>›</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===================== USAGE PAGE =====================
+function renderUsagePage(){
+  return `
+  <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Usage Monitoring</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card info"><div class="kpi-label">Active Subscriptions</div><div class="kpi-value">284</div><div class="kpi-sub">+12 this month</div><div class="kpi-trend">📦</div></div>
+    <div class="kpi-card warning"><div class="kpi-label">Overage Events</div><div class="kpi-value">23</div><div class="kpi-sub">$127K total exposure</div><div class="kpi-trend">📈</div></div>
+    <div class="kpi-card success"><div class="kpi-label">Compliant</div><div class="kpi-value">261</div><div class="kpi-sub">92% within limits</div><div class="kpi-trend">✅</div></div>
+    <div class="kpi-card danger"><div class="kpi-label">Auto-cap Disabled</div><div class="kpi-value">7</div><div class="kpi-sub">Requires manual review</div><div class="kpi-trend">⚙️</div></div>
+  </div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <div class="table-header"><span class="table-title">Usage Exceptions</span><button class="btn btn-sm btn-secondary" onclick="exportCSV()">Export</button></div>
+    <table>
+      <thead><tr><th>Subscription</th><th>Customer</th><th>Metric</th><th>Allocated</th><th>Used</th><th>Usage %</th><th>Overage Charge</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr onclick="openDetail('EX-2001')"><td><b>SUB-10023</b></td><td>Acme Corporation</td><td>API Calls</td><td>1M/mo</td><td>1.45M</td><td>${usageBar(145)}</td><td class="amount negative">$8,500</td><td><span class="sla-badge sla-breach">Critical</span></td></tr>
+        <tr onclick="openDetail('EX-2007')"><td><b>SUB-10083</b></td><td>CloudNine Analytics</td><td>Data Export</td><td>200 GB</td><td>230 GB</td><td>${usageBar(115)}</td><td class="amount negative">$900</td><td><span class="sla-badge sla-warn">Moderate</span></td></tr>
+        <tr onclick="openDetail('EX-2010')"><td><b>SUB-10113</b></td><td>RetailMax Corp</td><td>API Rate Limit</td><td>5K req/min</td><td>7.2K req/min</td><td>${usageBar(144)}</td><td class="amount negative">$4,200</td><td><span class="sla-badge sla-breach">Critical</span></td></tr>
+        <tr onclick="openDetail('EX-2004')"><td><b>SUB-10055</b></td><td>StartupHub Co</td><td>Storage</td><td>500 GB</td><td>527 GB</td><td>${usageBar(105)}</td><td class="amount negative">$320</td><td><span class="sla-badge sla-warn">Low</span></td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function usageBar(pct){
+  const color = pct > 130 ? 'var(--danger)' : pct > 100 ? 'var(--warning)' : 'var(--success)';
+  return `<div style="display:flex;align-items:center;gap:6px"><div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div><span style="font-size:12px;font-weight:600;color:${color}">${pct}%</span></div>`;
+}
+
+// ===================== RENEWALS PAGE =====================
+function renderRenewalsPage(){
+  return `
+  <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Renewal Management</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card warning"><div class="kpi-label">Due in 30 Days</div><div class="kpi-value">18</div><div class="kpi-sub">$340K ARR at stake</div><div class="kpi-trend">🔄</div></div>
+    <div class="kpi-card danger"><div class="kpi-label">At-Risk Renewals</div><div class="kpi-value">5</div><div class="kpi-sub">Churn risk flagged</div><div class="kpi-trend">🚨</div></div>
+    <div class="kpi-card success"><div class="kpi-label">Confirmed Renewals</div><div class="kpi-value">11</div><div class="kpi-sub">$220K secured</div><div class="kpi-trend">✅</div></div>
+    <div class="kpi-card info"><div class="kpi-label">Renewal Rate</div><div class="kpi-value">87%</div><div class="kpi-sub">Target: 92%</div><div class="kpi-trend">📊</div></div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header"><span class="table-title">Upcoming Renewals</span><button class="btn btn-sm btn-secondary" onclick="exportCSV()">Export</button></div>
+    <table>
+      <thead><tr><th>Subscription</th><th>Customer</th><th>Plan</th><th>ARR</th><th>Renewal Date</th><th>Status</th><th>Owner</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr onclick="openDetail('EX-2008')"><td><b>SUB-10091</b></td><td>FinServ Group</td><td>Financial Pro</td><td class="amount">$54,000</td><td style="color:var(--danger);font-weight:600">Sep 02, 2026</td><td><span class="priority-badge priority-critical">At Risk</span></td><td>Bob Martinez</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-warning" onclick="openDetail('EX-2008')">Engage</button></td></tr>
+        <tr onclick="openDetail('EX-2002')"><td><b>SUB-10031</b></td><td>TechFlow Inc</td><td>Business Plus</td><td class="amount">$18,750</td><td style="color:var(--warning);font-weight:600">Sep 05, 2026</td><td><span class="priority-badge priority-high">Pending Sig</span></td><td>Bob Martinez</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-primary" onclick="openDetail('EX-2002')">Review</button></td></tr>
+        <tr onclick="openDetail('EX-2005')"><td><b>SUB-10061</b></td><td>DataVault Systems</td><td>Enterprise Core</td><td class="amount">$29,000</td><td style="color:var(--warning);font-weight:600">Sep 04, 2026</td><td><span class="priority-badge priority-medium">In Negotiation</span></td><td>Emma Brown</td><td onclick="event.stopPropagation()"><button class="btn btn-sm btn-primary" onclick="openDetail('EX-2005')">Review</button></td></tr>
+        <tr><td><b>SUB-10144</b></td><td>LogisTech Inc</td><td>Logistics Pro</td><td class="amount">$12,000</td><td>Sep 15, 2026</td><td><span class="status-badge status-pending">Pending</span></td><td>Alice Chen</td><td><button class="btn btn-sm btn-secondary">Review</button></td></tr>
+        <tr><td><b>SUB-10156</b></td><td>HealthFirst Clinic</td><td>Healthcare Starter</td><td class="amount">$8,400</td><td>Sep 20, 2026</td><td><span class="status-badge status-open">Not Started</span></td><td>Frank Lee</td><td><button class="btn btn-sm btn-secondary">Start</button></td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ===================== REPORTS PAGE =====================
+function renderReportsPage(){
+  return `
+  <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Reports & Export</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+    ${[
+      {icon:'📊',title:'Exception Summary',desc:'All exceptions with status and financial exposure',btn:'Export CSV',fn:'exportCSV()'},
+      {icon:'💰',title:'Financial Exposure',desc:'Detailed breakdown of at-risk revenue by customer',btn:'Export Excel',fn:'exportExcel()'},
+      {icon:'🔄',title:'Renewal Pipeline',desc:'Upcoming renewals, ARR and risk classification',btn:'Export CSV',fn:"exportCSV('renewals')"},
+      {icon:'📈',title:'Usage Analytics',desc:'Overage events, quota utilization by subscription',btn:'Export Excel',fn:"exportExcel('usage')"},
+      {icon:'⏱️',title:'SLA Compliance',desc:'SLA breach and aging analysis by team',btn:'Export CSV',fn:'exportCSV()'},
+      {icon:'👤',title:'Owner Workload',desc:'Exception distribution by owner and resolution time',btn:'Export CSV',fn:'exportCSV()'},
+    ].map(r => `
+    <div class="table-wrap" style="padding:18px">
+      <div style="font-size:28px;margin-bottom:8px">${r.icon}</div>
+      <div style="font-weight:700;margin-bottom:4px">${r.title}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${r.desc}</div>
+      <button class="btn btn-primary btn-sm" onclick="${r.fn}">⬇ ${r.btn}</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ===================== DETAIL PANEL =====================
+function openDetail(id){
+  currentException = exceptionData.find(e => e.id === id);
+  if(!currentException) return;
+  document.getElementById('panelTitle').textContent = currentException.id + ' — ' + currentException.customer;
+  document.getElementById('panelSubtitle').textContent = currentException.subId + ' · ' + currentException.plan;
+  document.getElementById('panelStatusBadge').innerHTML = `<span class="status-badge status-${currentException.status}">${currentException.status}</span>`;
+  currentTab = 'details';
+  renderPanelTab();
+  document.getElementById('panelOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+  // update active tab
+  document.querySelectorAll('.panel-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-details').classList.add('active');
+}
+
+function closePanel(){
+  document.getElementById('panelOverlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.panel-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  renderPanelTab();
+}
+
+function renderPanelTab(){
+  const e = currentException;
+  if(!e) return;
+  const body = document.getElementById('panelBody');
+  const footer = document.getElementById('panelFooter');
+  if(currentTab === 'details'){
+    body.innerHTML = renderDetailsTab(e);
+    footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="openAssignModal()">👤 Reassign</button>
+      <button class="btn btn-warning" onclick="openEscalateModal()">🚨 Escalate</button>
+      <button class="btn btn-success" onclick="openResolveModal()">✅ Resolve</button>
+      <button class="btn btn-danger" onclick="rejectException()" style="margin-left:auto">❌ Reject</button>`;
+  } else if(currentTab === 'usage'){
+    body.innerHTML = renderUsageTab(e);
+    footer.innerHTML = `<button class="btn btn-primary" onclick="openDetail('${e.id}')">🔄 Refresh Data</button>`;
+  } else if(currentTab === 'actions'){
+    body.innerHTML = renderActionsTab(e);
+    footer.innerHTML = `<button class="btn btn-primary" onclick="approveException()">✅ Approve & Execute</button><button class="btn btn-secondary" onclick="switchTab('comments')">💬 Add Comment</button>`;
+  } else if(currentTab === 'comments'){
+    body.innerHTML = renderCommentsTab(e);
+    footer.innerHTML = '';
+  } else if(currentTab === 'history'){
+    body.innerHTML = renderHistoryTab(e);
+    footer.innerHTML = '';
+  }
+}
+
+function renderDetailsTab(e){
+  return `
+  <div class="section">
+    <div class="section-title">Exception Information</div>
+    <div class="field-grid">
+      <div class="field"><div class="field-label">Exception ID</div><div class="field-value"><b>${e.id}</b></div></div>
+      <div class="field"><div class="field-label">Type</div><div class="field-value"><span class="type-badge type-${e.type}">${e.type}</span></div></div>
+      <div class="field"><div class="field-label">Priority</div><div class="field-value"><span class="priority-badge priority-${e.priority}">${e.priority}</span></div></div>
+      <div class="field"><div class="field-label">Status</div><div class="field-value"><span class="status-badge status-${e.status}">${e.status}</span></div></div>
+      <div class="field"><div class="field-label">Financial Exposure</div><div class="field-value highlight">$${e.amount.toLocaleString()}</div></div>
+      <div class="field"><div class="field-label">SLA Status</div><div class="field-value"><span class="sla-badge sla-${e.sla}">${e.sla==='breach'?'⛔ SLA Breach':e.sla==='warn'?'⚠️ At Risk':'✅ Within SLA'}</span></div></div>
+      <div class="field"><div class="field-label">Aging</div><div class="field-value" style="color:${e.aging>10?'var(--danger)':'var(--text)'}"><b>${e.aging} days</b></div></div>
+      <div class="field"><div class="field-label">Cycle Time</div><div class="field-value">${e.cycleTime} days</div></div>
+      <div class="field"><div class="field-label">Created</div><div class="field-value">${e.created}</div></div>
+      <div class="field"><div class="field-label">Due Date</div><div class="field-value" style="color:${new Date(e.dueDate)<new Date()?'var(--danger)':'var(--text)'}">${e.dueDate}</div></div>
+      <div class="field field-full"><div class="field-label">Description</div><div class="field-value">${e.description}</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Subscription Details</div>
+    <div class="field-grid">
+      <div class="field"><div class="field-label">Subscription ID</div><div class="field-value"><b>${e.subId}</b></div></div>
+      <div class="field"><div class="field-label">Customer</div><div class="field-value">${e.customer}</div></div>
+      <div class="field"><div class="field-label">Plan</div><div class="field-value">${e.plan}</div></div>
+      <div class="field"><div class="field-label">Assigned Group</div><div class="field-value">${e.assignedGroup}</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Assignment</div>
+    <div class="field-grid">
+      <div class="field"><div class="field-label">Owner</div><div class="field-value"><div class="owner-chip"><div class="owner-avatar" style="width:28px;height:28px;font-size:11px;background:${OWNER_COLORS[OWNERS.indexOf(e.owner)]||'var(--primary)'}">${e.owner.split(' ').map(x=>x[0]).join('')}</div>${e.owner}</div></div></div>
+      <div class="field"><div class="field-label">Escalated</div><div class="field-value">${e.escalated?'<span style="color:var(--danger);font-weight:600">Yes 🚨</span>':'No'}</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Approval Workflow</div>
+    <div class="workflow-steps">
+      <div class="workflow-step ${e.approvalStep>=1?'done':''}">
+        <div class="step-circle">1</div>
+        <span class="step-label">Submitted</span>
+      </div>
+      <div class="workflow-step ${e.approvalStep>=2?'done':e.approvalStep===1?'active':''}">
+        <div class="step-circle">2</div>
+        <span class="step-label">Team Lead</span>
+      </div>
+      <div class="workflow-step ${e.approvalStep>=3?'done':e.approvalStep===2?'active':''}">
+        <div class="step-circle">3</div>
+        <span class="step-label">Manager</span>
+      </div>
+      <div class="workflow-step ${e.approvalStep>=4?'done':e.approvalStep===3?'active':''}">
+        <div class="step-circle">4</div>
+        <span class="step-label">Finance</span>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--muted)">Step ${e.approvalStep} of 4 — ${e.approvalStep===4?'Fully Approved':['Submitted','Team Lead Review','Manager Approval','Finance Sign-off'][e.approvalStep-1]}</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Tags</div>
+    <div class="chip-group">${e.tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+  </div>`;
+}
+
+function renderUsageTab(e){
+  const isUsage = e.type === 'usage';
+  const isRenewal = e.type === 'renewal';
+  return `
+  <div class="section">
+    <div class="section-title">Usage Status</div>
+    <div class="usage-grid">
+      <div class="usage-card">
+        <div class="usage-card-title">API Calls</div>
+        <div class="meter"><span class="meter-label">Monthly Quota</span><div class="meter-bar"><div class="meter-fill" style="width:${isUsage?Math.min(145,100):72}%;background:${isUsage?'var(--danger)':'var(--success)'}"></div></div><span class="meter-val" style="color:${isUsage?'var(--danger)':'var(--success)'}">${isUsage?'145%':'72%'}</span></div>
+        <div class="meter"><span class="meter-label">Daily Avg</span><div class="meter-bar"><div class="meter-fill" style="width:${isUsage?95:60}%;background:var(--warning)"></div></div><span class="meter-val">${isUsage?'95%':'60%'}</span></div>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card-title">Storage</div>
+        <div class="meter"><span class="meter-label">Disk Used</span><div class="meter-bar"><div class="meter-fill fill-warning" style="width:78%"></div></div><span class="meter-val">78%</span></div>
+        <div class="meter"><span class="meter-label">Bandwidth</span><div class="meter-bar"><div class="meter-fill fill-success" style="width:45%"></div></div><span class="meter-val">45%</span></div>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card-title">Users</div>
+        <div class="meter"><span class="meter-label">Licensed</span><div class="meter-bar"><div class="meter-fill fill-success" style="width:88%"></div></div><span class="meter-val">88%</span></div>
+        <div class="meter"><span class="meter-label">Active (30d)</span><div class="meter-bar"><div class="meter-fill fill-success" style="width:65%"></div></div><span class="meter-val">65%</span></div>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card-title">Features</div>
+        <div class="meter"><span class="meter-label">Exports</span><div class="meter-bar"><div class="meter-fill fill-warning" style="width:92%"></div></div><span class="meter-val">92%</span></div>
+        <div class="meter"><span class="meter-label">Integrations</span><div class="meter-bar"><div class="meter-fill fill-success" style="width:50%"></div></div><span class="meter-val">50%</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Renewal Status</div>
+    <div class="info-row"><span class="info-row-key">Renewal Date</span><span style="font-weight:600">${isRenewal?e.dueDate:'Dec 01, 2026'}</span></div>
+    <div class="info-row"><span class="info-row-key">Contract Term</span><span>Annual (12 months)</span></div>
+    <div class="info-row"><span class="info-row-key">Auto-Renew</span><span>${isRenewal?'<span style="color:var(--danger)">Disabled</span>':'<span style="color:var(--success)">Enabled</span>'}</span></div>
+    <div class="info-row"><span class="info-row-key">Renewal ARR</span><span class="amount">$${e.amount.toLocaleString()}</span></div>
+    <div class="info-row"><span class="info-row-key">Contract Status</span><span class="status-badge status-${isRenewal?'pending':'open'}">${isRenewal?'Awaiting Signature':'Active'}</span></div>
+    <div class="info-row"><span class="info-row-key">Discount Applied</span><span>${isRenewal?'12% (Negotiated)':'5% (Standard)'}</span></div>
+    <div class="info-row"><span class="info-row-key">Previous Renewal</span><span style="color:var(--muted)">Dec 01, 2025 ✓ Completed</span></div>
+  </div>`;
+}
+
+function renderActionsTab(e){
+  const actions = [];
+  if(e.sla === 'breach') actions.push({icon:'🚨',title:'Immediate Escalation Required',desc:'SLA has been breached. Escalate to Finance Director and notify customer within 2 hours.',btn:'Escalate Now',fn:"openEscalateModal()"});
+  if(e.type === 'usage') actions.push({icon:'📊',title:'Review Usage Data',desc:'Pull detailed usage logs and generate overage report for the billing period. Prepare credit note if applicable.',btn:'Generate Report',fn:"toast('Usage report generated successfully!','success')"});
+  if(e.type === 'renewal') actions.push({icon:'📧',title:'Send Renewal Reminder',desc:'Customer has not responded to renewal offer. Send personalized follow-up email with updated proposal.',btn:'Send Email',fn:"toast('Renewal reminder email sent to customer!','success')"});
+  if(e.type === 'billing') actions.push({icon:'💳',title:'Issue Credit Note',desc:'Prepare and issue credit note to resolve billing dispute. Amount: $'+Math.round(e.amount*0.1).toLocaleString(),btn:'Issue Credit',fn:"openCreditModal()"});
+  actions.push({icon:'👤',title:'Reassign to Specialist',desc:'This exception may require specialized expertise. Reassign to the appropriate team member.',btn:'Reassign',fn:"openAssignModal()"});
+  actions.push({icon:'📋',title:'Generate Exception Report',desc:'Create a detailed PDF report of this exception for management review.',btn:'Generate PDF',fn:"toast('Exception report PDF generated!','success')"});
+
+  return `
+  <div class="section">
+    <div class="section-title">Recommended Actions</div>
+    <div class="action-cards">
+      ${actions.map((a,i) => `
+      <div class="action-card">
+        <div class="action-icon">${a.icon}</div>
+        <div class="action-content">
+          <div class="action-title">${a.title}</div>
+          <div class="action-desc">${a.desc}</div>
+          <div class="action-btn-group">
+            <button class="btn btn-sm btn-primary" onclick="${a.fn}">${a.btn}</button>
+            <button class="btn btn-sm btn-secondary" onclick="toast('Action dismissed','info')">Dismiss</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderCommentsTab(e){
+  const comments = COMMENTS_MAP[e.id] || [];
+  return `
+  <div class="section">
+    <div class="section-title">Comments (${comments.length})</div>
+    ${comments.length === 0 ? '<div style="color:var(--muted);font-size:13px;padding:8px 0">No comments yet. Be the first to add one.</div>' : ''}
+    <div class="comment-list">
+      ${comments.map(c => `
+      <div class="comment">
+        <div class="comment-avatar" style="background:${c.color}">${c.author.split(' ').map(x=>x[0]).join('').slice(0,2)}</div>
+        <div class="comment-body">
+          <div class="comment-meta"><b>${c.author}</b> · ${c.time}</div>
+          <div class="comment-text">${c.text}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="form-group">
+      <label class="form-label">Add Comment<span class="req">*</span></label>
+      <textarea class="form-textarea" id="newComment" placeholder="Type your comment here..."></textarea>
+      <div class="form-error" id="commentError" style="display:none">Comment cannot be empty</div>
+    </div>
+    <button class="btn btn-primary" onclick="submitComment('${e.id}')">💬 Post Comment</button>
+  </div>`;
+}
+
+function renderHistoryTab(e){
+  const history = HISTORY_MAP[e.id] || [
+    {type:'create',icon:'🆕',cls:'dot-create',text:'Exception created',by:'System',time:'Aug 20, 2026 6:00 AM'},
+    {type:'assign',icon:'👤',cls:'dot-assign',text:`Assigned to ${e.owner}`,by:'John Doe',time:'Aug 20, 2026 9:00 AM'},
+  ];
+  return `
+  <div class="section">
+    <div class="section-title">Audit & History</div>
+    <div class="timeline">
+      ${history.map(h => `
+      <div class="timeline-item">
+        <div class="timeline-dot ${h.cls}">${h.icon}</div>
+        <div class="timeline-content">
+          <div class="timeline-action">${h.text}</div>
+          <div class="timeline-meta">by <b>${h.by}</b> · ${h.time}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ===================== MODALS =====================
+function openModal(title, body, footer){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalFooter').innerHTML = footer;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+
+function openAssignModal(){
+  openModal('Reassign Exception',
+    `<div class="form-group"><label class="form-label">Assign To<span class="req">*</span></label>
+    <select class="form-select" id="assignOwner">
+      ${OWNERS.map(o=>`<option value="${o}" ${o===currentException.owner?'selected':''}>${o}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label class="form-label">Group</label>
+    <select class="form-select" id="assignGroup">
+      <option>Billing Ops</option><option>Finance</option><option>Sales</option><option>Account Mgmt</option><option>Engineering</option>
+    </select></div>
+    <div class="form-group"><label class="form-label">Reason for Reassignment</label>
+    <textarea class="form-textarea" id="assignReason" placeholder="Briefly explain the reason..."></textarea></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="submitAssign()">Assign</button>`
+  );
+}
+
+function submitAssign(){
+  const owner = document.getElementById('assignOwner').value;
+  if(!owner){showFieldError('assignOwner','Please select an owner');return;}
+  currentException.owner = owner;
+  currentException.assignedGroup = document.getElementById('assignGroup').value;
+  closeModal();
+  toast(`Exception reassigned to ${owner}`, 'success');
+  renderPanelTab();
+  refreshPage();
+}
+
+function openEscalateModal(){
+  openModal('Escalate Exception',
+    `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--danger)"><b>⚠️ Warning:</b> Escalation will notify the Finance Director and customer account team immediately.</div>
+    <div class="form-group"><label class="form-label">Escalate To<span class="req">*</span></label>
+    <select class="form-select" id="escalateTo">
+      <option>Finance Director</option><option>VP of Sales</option><option>Regional Manager</option><option>CTO</option>
+    </select></div>
+    <div class="form-group"><label class="form-label">Escalation Reason<span class="req">*</span></label>
+    <textarea class="form-textarea" id="escalateReason" placeholder="Describe why this needs escalation..."></textarea>
+    <div class="form-error" id="escalateReasonError" style="display:none">Reason is required</div></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-danger" onclick="submitEscalate()">🚨 Escalate</button>`
+  );
+}
+
+function submitEscalate(){
+  const reason = document.getElementById('escalateReason').value.trim();
+  if(!reason){showFieldError('escalateReason','Escalation reason is required');document.getElementById('escalateReasonError').style.display='block';return;}
+  currentException.escalated = true;
+  currentException.sla = 'breach';
+  currentException.status = 'escalated';
+  closeModal();
+  toast('Exception escalated successfully! Stakeholders notified.', 'warning');
+  document.getElementById('panelStatusBadge').innerHTML = `<span class="status-badge status-escalated">escalated</span>`;
+  renderPanelTab();
+  refreshPage();
+}
+
+function openResolveModal(){
+  openModal('Resolve Exception',
+    `<div class="form-group"><label class="form-label">Resolution Type<span class="req">*</span></label>
+    <select class="form-select" id="resolveType">
+      <option value="">-- Select Resolution --</option>
+      <option>Credit Note Issued</option><option>Exception Waived</option><option>Customer Notified & Acknowledged</option><option>Contract Updated</option><option>Technical Fix Applied</option>
+    </select>
+    <div class="form-error" id="resolveTypeError" style="display:none">Please select resolution type</div></div>
+    <div class="form-group"><label class="form-label">Resolution Notes<span class="req">*</span></label>
+    <textarea class="form-textarea" id="resolveNotes" placeholder="Summarize the resolution steps taken..."></textarea>
+    <div class="form-error" id="resolveNotesError" style="display:none">Resolution notes are required</div></div>
+    <div class="form-group"><label class="form-label">Credit Amount (if applicable)</label>
+    <input type="number" class="form-input" id="resolveCredit" placeholder="0.00"></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-success" onclick="submitResolve()">✅ Mark Resolved</button>`
+  );
+}
+
+function submitResolve(){
+  const type = document.getElementById('resolveType').value;
+  const notes = document.getElementById('resolveNotes').value.trim();
+  let valid = true;
+  if(!type){document.getElementById('resolveTypeError').style.display='block';valid=false;}else{document.getElementById('resolveTypeError').style.display='none';}
+  if(!notes){document.getElementById('resolveNotesError').style.display='block';valid=false;}else{document.getElementById('resolveNotesError').style.display='none';}
+  if(!valid) return;
+  currentException.status = 'resolved';
+  currentException.sla = 'ok';
+  closeModal();
+  toast('Exception resolved successfully!', 'success');
+  document.getElementById('panelStatusBadge').innerHTML = `<span class="status-badge status-resolved">resolved</span>`;
+  renderPanelTab();
+  refreshPage();
+}
+
+function openCreditModal(){
+  openModal('Issue Credit Note',
+    `<div class="form-group"><label class="form-label">Credit Amount<span class="req">*</span></label>
+    <input type="number" class="form-input" id="creditAmount" value="${Math.round(currentException.amount*0.1)}" placeholder="Amount in USD"></div>
+    <div class="form-group"><label class="form-label">Credit Reason<span class="req">*</span></label>
+    <select class="form-select" id="creditReason">
+      <option>Billing Error</option><option>Service Disruption</option><option>Goodwill Gesture</option><option>Contract Dispute</option><option>Overage Waiver</option>
+    </select></div>
+    <div class="form-group"><label class="form-label">Notes</label>
+    <textarea class="form-textarea" id="creditNotes" placeholder="Additional notes..."></textarea></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="submitCredit()">Issue Credit Note</button>`
+  );
+}
+
+function submitCredit(){
+  const amount = document.getElementById('creditAmount').value;
+  if(!amount || amount <= 0){toast('Please enter a valid credit amount','error');return;}
+  closeModal();
+  toast(`Credit note of $${parseFloat(amount).toLocaleString()} issued successfully!`, 'success');
+}
+
+function openNewExceptionModal(){
+  openModal('Create New Exception',
+    `<div class="field-grid">
+    <div class="form-group"><label class="form-label">Subscription ID<span class="req">*</span></label>
+    <input class="form-input" id="newSubId" placeholder="SUB-XXXXX"></div>
+    <div class="form-group"><label class="form-label">Exception Type<span class="req">*</span></label>
+    <select class="form-select" id="newType"><option value="">Select Type</option><option>usage</option><option>renewal</option><option>billing</option></select></div>
+    <div class="form-group"><label class="form-label">Customer Name<span class="req">*</span></label>
+    <input class="form-input" id="newCustomer" placeholder="Customer name"></div>
+    <div class="form-group"><label class="form-label">Financial Exposure ($)<span class="req">*</span></label>
+    <input type="number" class="form-input" id="newAmount" placeholder="0.00"></div>
+    <div class="form-group"><label class="form-label">Priority<span class="req">*</span></label>
+    <select class="form-select" id="newPriority"><option value="">Select Priority</option><option>critical</option><option>high</option><option>medium</option><option>low</option></select></div>
+    <div class="form-group"><label class="form-label">Owner<span class="req">*</span></label>
+    <select class="form-select" id="newOwner"><option value="">Assign Owner</option>${OWNERS.map(o=>`<option>${o}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-group field-full"><label class="form-label">Description<span class="req">*</span></label>
+    <textarea class="form-textarea" id="newDesc" placeholder="Describe the exception in detail..."></textarea></div>
+    <div id="newExceptionErrors" style="color:var(--danger);font-size:12px;margin-top:8px"></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" onclick="submitNewException()">Create Exception</button>`
+  );
+}
+
+function submitNewException(){
+  const subId = document.getElementById('newSubId').value.trim();
+  const type = document.getElementById('newType').value;
+  const customer = document.getElementById('newCustomer').value.trim();
+  const amount = document.getElementById('newAmount').value;
+  const priority = document.getElementById('newPriority').value;
+  const owner = document.getElementById('newOwner').value;
+  const desc = document.getElementById('newDesc').value.trim();
+  const errors = [];
+  if(!subId) errors.push('Subscription ID');
+  if(!type) errors.push('Exception Type');
+  if(!customer) errors.push('Customer Name');
+  if(!amount || amount <= 0) errors.push('Valid Financial Exposure');
+  if(!priority) errors.push('Priority');
+  if(!owner) errors.push('Owner');
+  if(!desc) errors.push('Description');
+  if(errors.length){
+    document.getElementById('newExceptionErrors').textContent = '⚠️ Please fill in: ' + errors.join(', ');
+    ['newSubId','newType','newCustomer','newAmount','newPriority','newOwner','newDesc'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el && !el.value) el.classList.add('error');
+    });
+    return;
+  }
+  const newId = 'EX-' + (2010 + exceptionData.length + 1);
+  const today = new Date().toISOString().split('T')[0];
+  exceptionData.unshift({
+    id:newId,type,subId,customer,plan:'Custom Plan',amount:parseFloat(amount),priority,status:'open',
+    owner,created:today,dueDate:today,aging:0,cycleTime:0,sla:'ok',description:desc,
+    tags:[type],assignedGroup:'Billing Ops',escalated:false,approvalStep:1
+  });
+  closeModal();
+  toast(`Exception ${newId} created successfully!`, 'success');
+  refreshPage();
+}
+
+function rejectException(){
+  openModal('Reject Exception',
+    `<div class="form-group"><label class="form-label">Rejection Reason<span class="req">*</span></label>
+    <textarea class="form-textarea" id="rejectReason" placeholder="Explain why this exception is being rejected..."></textarea>
+    <div class="form-error" id="rejectReasonError" style="display:none">Reason is required</div></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-danger" onclick="submitReject()">❌ Reject</button>`
+  );
+}
+
+function submitReject(){
+  const reason = document.getElementById('rejectReason').value.trim();
+  if(!reason){document.getElementById('rejectReasonError').style.display='block';return;}
+  currentException.status = 'resolved';
+  closeModal();
+  toast('Exception rejected and closed.', 'warning');
+  document.getElementById('panelStatusBadge').innerHTML = `<span class="status-badge status-rejected">rejected</span>`;
+  refreshPage();
+}
+
+function approveException(){
+  if(currentException.approvalStep < 4){
+    currentException.approvalStep++;
+    toast(`Approved! Moved to step ${currentException.approvalStep} of 4.`, 'success');
+    renderPanelTab();
+    refreshPage();
+  } else {
+    currentException.status = 'resolved';
+    toast('Exception fully approved and resolved!', 'success');
+    closePanel();
+    refreshPage();
+  }
+}
+
+// ===================== COMMENTS =====================
+function submitComment(exceptionId){
+  const text = document.getElementById('newComment').value.trim();
+  if(!text){document.getElementById('commentError').style.display='block';return;}
+  document.getElementById('commentError').style.display='none';
+  if(!COMMENTS_MAP[exceptionId]) COMMENTS_MAP[exceptionId] = [];
+  COMMENTS_MAP[exceptionId].push({
+    author:'John Doe',color:'#2563eb',
+    time: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+    text
+  });
+  toast('Comment posted!', 'success');
+  renderPanelTab();
+}
+
+// ===================== FILTERS & SORT =====================
+function onSearch(val){ searchQuery = val; currentPage_table = 1; refreshPage(); }
+function onFilterStatus(val){ filterStatus = val; currentPage_table = 1; refreshPage(); }
+function onFilterPriority(val){ filterPriority = val; currentPage_table = 1; refreshPage(); }
+function onFilterType(val){ filterType = val; currentPage_table = 1; refreshPage(); }
+function clearFilters(){ searchQuery='';filterStatus='';filterPriority='';filterType=''; currentPage_table=1; refreshPage(); }
+function onSort(col){ if(sortCol===col) sortDir = sortDir==='asc'?'desc':'asc'; else{sortCol=col;sortDir='desc';} refreshPage(); }
+function gotoPage(p){ const max = Math.ceil(getFilteredData().length/PAGE_SIZE); if(p<1||p>max) return; currentPage_table=p; refreshPage(); }
+
+function getFilteredData(){
+  let data = [...exceptionData];
+  if(searchQuery) data = data.filter(e => e.id.toLowerCase().includes(searchQuery.toLowerCase())||e.customer.toLowerCase().includes(searchQuery.toLowerCase()));
+  if(filterStatus) data = data.filter(e => e.status===filterStatus);
+  if(filterPriority) data = data.filter(e => e.priority===filterPriority);
+  if(filterType) data = data.filter(e => e.type===filterType);
+  return data;
+}
+
+function refreshPage(){ setPage(currentPage); }
+function attachTableEvents(){}
+
+// ===================== NOTIFICATIONS =====================
+function renderNotifList(){
+  const list = document.getElementById('notifList');
+  list.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.read?'':'unread'}" onclick="readNotif(${n.id})">
+      <div class="notif-dot ${n.read?'read':''}"></div>
+      <div><div class="notif-text">${n.text}</div><div class="notif-time">${n.time}</div></div>
+    </div>`).join('');
+  const unread = NOTIFICATIONS.filter(n=>!n.read).length;
+  document.getElementById('notifCount').textContent = unread;
+  document.getElementById('notifCount').style.display = unread > 0 ? 'flex' : 'none';
+}
+
+function toggleNotif(){
+  const dd = document.getElementById('notifDropdown');
+  dd.classList.toggle('open');
+}
+function closeNotif(){ document.getElementById('notifDropdown').classList.remove('open'); }
+function readNotif(id){
+  NOTIFICATIONS.find(n=>n.id===id).read = true;
+  renderNotifList();
+}
+function markAllRead(){
+  NOTIFICATIONS.forEach(n=>n.read=true);
+  renderNotifList();
+  toast('All notifications marked as read', 'info');
+  closeNotif();
+}
+
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('notifDropdown');
+  const btn = document.getElementById('notifBtn');
+  if(!dd.contains(e.target) && !btn.contains(e.target)) dd.classList.remove('open');
+});
+
+// ===================== EXPORT =====================
+function exportCSV(){
+  const headers = ['ID','Type','Customer','Subscription','Plan','Amount','Priority','Status','Aging','SLA','Owner','Created'];
+  const rows = exceptionData.map(e => [e.id,e.type,e.customer,e.subId,e.plan,e.amount,e.priority,e.status,e.aging,e.sla,e.owner,e.created]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  download('billing_exceptions.csv', csv, 'text/csv');
+  toast('CSV exported successfully!', 'success');
+}
+
+function exportExcel(){
+  // Generates a simple TSV that Excel can open
+  const headers = ['ID','Type','Customer','Subscription','Plan','Amount','Priority','Status','Aging (days)','SLA','Owner','Created'];
+  const rows = exceptionData.map(e => [e.id,e.type,e.customer,e.subId,e.plan,e.amount,e.priority,e.status,e.aging,e.sla,e.owner,e.created]);
+  const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
+  download('billing_exceptions.xls', tsv, 'application/vnd.ms-excel');
+  toast('Excel file exported successfully!', 'success');
+}
+
+function download(filename, content, type){
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================== TOAST =====================
+function toast(msg, type='info'){
+  const icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const container = document.getElementById('toastContainer');
+  const id = 't' + Date.now();
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.id = id;
+  el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span><button class="toast-close" onclick="removeToast('${id}')">✕</button>`;
+  container.appendChild(el);
+  setTimeout(() => removeToast(id), 4000);
+}
+
+function removeToast(id){
+  const el = document.getElementById(id);
+  if(el){ el.style.animation = 'fadeOut .3s ease forwards'; setTimeout(()=>el.remove(), 300); }
+}
+
+function showFieldError(id, msg){
+  const el = document.getElementById(id);
+  if(el) el.classList.add('error');
+}
+</script>
+</body>
+</html>
